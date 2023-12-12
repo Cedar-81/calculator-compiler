@@ -24,7 +24,7 @@ enum Operator {
 }
 
 fn main() {
-    parser("(3 + 5 * 10 * 20 * 2 * 40 * 3 / 9 + 2) / 8 * (3 + 5 * 10 * 20)")
+    parser("-5*(2-10)")
 }
 
 fn parser(calc: &str) {
@@ -55,7 +55,7 @@ fn parser(calc: &str) {
             _ => (),
         }
     }
-
+    ///for cases where calc begins with a -
     let fin_bin_op = build_bin_op(Expr::PriorityArr(priority_arr.clone()));
     let result = calculate(fin_bin_op.clone().unwrap(), 0_f32);
 
@@ -125,7 +125,15 @@ fn build_bin_op(exp: Expr) -> Option<Expr> {
 
             //println!("inhere, {} {:?}\n", max_idx, tuple_vec);
 
-            let left_idx = max_idx - 1;
+            let mut left_idx;
+
+            ///for cases where calc begins with a -
+            if max_idx as isize - 1 < 0 {
+                left_idx = 0;
+            } else {
+                left_idx = max_idx - 1;
+            }
+
             let right_idx = max_idx + 1;
 
             let left = Box::new(tuple_vec[left_idx as usize].0.clone());
