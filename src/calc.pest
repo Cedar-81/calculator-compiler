@@ -1,0 +1,9 @@
+num        =  { ASCII_DIGIT+ }
+WHITESPACE = _{ " " }
+divide     =  { "/" }
+multiply   =  { "*" }
+add        =  { "+" }
+subtract   =  { "-" }
+opr        =  { add | subtract | divide | multiply }
+expr       =  { "(" ~ (opr* ~ num+)+ ~ ")" }
+block      =  { SOI ~ (opr | expr+ | num+)+ ~ EOI }
