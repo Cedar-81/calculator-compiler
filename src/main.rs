@@ -21,10 +21,16 @@ enum Operator {
     Subtract,
     Multiply,
     Divide,
+    Sqrt(String),
+    Pow(String, String),
+    Root(String, String),
+    Cos(String),
+    Sine(String),
+    Tan(String),
 }
 
 fn main() {
-    parser("-5*(2-10)")
+    parser("sin(0)");
 }
 
 fn parser(calc: &str) {
@@ -37,9 +43,12 @@ fn parser(calc: &str) {
     let mut priority_arr: Vec<(Expr, i32)> = Vec::new();
 
     for pair in block {
+        /// parse each pair into its supposed type
         let result = build_ast(pair.clone(), &val);
         //println!("pair: {}\n result: {:?}", pair.as_str(), result);
+        println!("result: {:?}", result);
 
+        /// build a priority arr for each all aprsed pair
         match result {
             Expr::PriorityArr(_) => {
                 let value = build_bin_op(result); //consturct BinOp for brackets
@@ -50,25 +59,41 @@ fn parser(calc: &str) {
             Expr::Operator(Operator::Subtract) => priority_arr.push((result, 2)),
             Expr::Operator(Operator::Multiply) => priority_arr.push((result, 3)),
             Expr::Operator(Operator::Divide) => priority_arr.push((result, 4)),
+            Expr::Operator(Operator::Pow(_, _)) => priority_arr.push((result, 0)),
+            Expr::Operator(Operator::Sqrt(_)) => priority_arr.push((result, 0)),
+            Expr::Operator(Operator::Root(_, _)) => priority_arr.push((result, 0)),
+            Expr::Operator(Operator::Sine(_)) => priority_arr.push((result, 0)),
+            Expr::Operator(Operator::Cos(_)) => priority_arr.push((result, 0)),
+            Expr::Operator(Operator::Tan(_)) => priority_arr.push((result, 0)),
             Expr::Number(_) => priority_arr.push((result, 0)),
 
             _ => (),
         }
     }
-    ///for cases where calc begins with a -
-    let fin_bin_op = build_bin_op(Expr::PriorityArr(priority_arr.clone()));
-    let result = calculate(fin_bin_op.clone().unwrap(), 0_f32);
 
-    println!(
-        "PriorityArr Data: {:?}\n\nFinalBinOp: {:?}\n\nCalcResult: {:?}",
-        priority_arr,
-        fin_bin_op, //construct BinOp for all
-        result
-    );
+    println!("parr: {:?}", priority_arr);
+
+    if priority_arr.len() > 1 {
+        let fin_bin_op = build_bin_op(Expr::PriorityArr(priority_arr.clone()));
+        let result = calculate(fin_bin_op.clone().unwrap(), 0_f32);
+
+        println!(
+            "PriorityArr Data: {:?}\n\nFinalBinOp: {:?}\n\nCalcResult: {:?}",
+            priority_arr,
+            fin_bin_op, //construct BinOp for all
+            result
+        );
+    } else {
+        let result = calculate(priority_arr.clone()[0].0.clone(), 0_f32);
+        println!(
+            "PriorityArr Data: {:?}\n\nCalcResult: {:?}",
+            priority_arr, result
+        );
+    }
 }
 
 fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
-    //println!("calledhere, {:?}", exp);
+    println!("calledhere, {:?}", exp);
     let mut mut_sum = sum_val.clone();
 
     //println!("heres the mut sum: {}", mut_sum);
@@ -79,7 +104,7 @@ fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
             let l_val = calculate(*left, mut_sum);
             let r_val = calculate(*right, mut_sum);
 
-            //println!("iniside here; {:?} {:?}", l_val, r_val);
+            println!("iniside here; {:?} {:?}", l_val, r_val);
 
             mut_sum += match (l_val, r_val) {
                 (Some(val1), Some(val2)) => combine(val1, center, val2),
@@ -104,7 +129,31 @@ fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
             Some(mut_sum)
         }
         Expr::Number(num) => Some(num.trim().parse::<f32>().unwrap()),
-
+        Expr::Operator(Operator::Pow(num1, num2)) => Some(
+            num1.parse::<f32>()
+                .unwrap()
+                .powf(num2.parse::<f32>().unwrap()),
+        ),
+        Expr::Operator(Operator::Sqrt(num1)) => Some(num1.parse::<f32>().unwrap().sqrt()),
+        Expr::Operator(Operator::Root(num1, num2)) => Some(
+            num1.parse::<f32>()
+                .unwrap()
+                .powf(1.0 / num2.parse::<f32>().unwrap()),
+        ),
+        Expr::Operator(Operator::Cos(num1)) => Some(num1.parse::<f32>().unwrap().cos()),
+        Expr::Operator(Operator::Sine(num1)) => Some(num1.parse::<f32>().unwrap().sin()),
+        Expr::Operator(Operator::Tan(num1)) => {
+            let angle_degrees = num1.parse::<f32>().unwrap();
+            // Check if the angle is exactly 90 degrees
+            if (angle_degrees % 180.0) == 90.0 {
+                println!("The tangent of 90 degrees is undefined.");
+                None
+            } else {
+                let angle_radians = angle_degrees.to_radians();
+                let tan_result = angle_radians.tan();
+                Some(tan_result)
+            }
+        }
         _ => None,
     }
 }
@@ -193,6 +242,12 @@ fn build_ast(pair: Pair<Rule>, value: &str) -> Expr {
                     Expr::Operator(Operator::Subtract) => priority_arr.push((n, 2)),
                     Expr::Operator(Operator::Multiply) => priority_arr.push((n, 3)),
                     Expr::Operator(Operator::Divide) => priority_arr.push((n, 4)),
+                    Expr::Operator(Operator::Pow(_, _)) => priority_arr.push((n, 0)),
+                    Expr::Operator(Operator::Sqrt(_)) => priority_arr.push((n, 0)),
+                    Expr::Operator(Operator::Root(_, _)) => priority_arr.push((n, 0)),
+                    Expr::Operator(Operator::Sine(_)) => priority_arr.push((n, 0)),
+                    Expr::Operator(Operator::Cos(_)) => priority_arr.push((n, 0)),
+                    Expr::Operator(Operator::Tan(_)) => priority_arr.push((n, 0)),
                     Expr::Number(_) => priority_arr.push((n, 0)),
                     _ => (),
                 }
@@ -210,6 +265,42 @@ fn build_ast(pair: Pair<Rule>, value: &str) -> Expr {
         Rule::divide => Expr::Operator(Operator::Divide),
 
         Rule::multiply => Expr::Operator(Operator::Multiply),
+
+        Rule::pow => Expr::Operator(Operator::Pow(
+            pair.clone()
+                .into_inner()
+                .next()
+                .unwrap()
+                .as_str()
+                .to_string(),
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
+
+        Rule::sqrt => Expr::Operator(Operator::Sqrt(
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
+
+        Rule::root => Expr::Operator(Operator::Root(
+            pair.clone()
+                .into_inner()
+                .next()
+                .unwrap()
+                .as_str()
+                .to_string(),
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
+
+        Rule::sin => Expr::Operator(Operator::Sine(
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
+
+        Rule::cos => Expr::Operator(Operator::Cos(
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
+
+        Rule::tan => Expr::Operator(Operator::Tan(
+            pair.into_inner().next().unwrap().as_str().to_string(),
+        )),
 
         Rule::num => Expr::Number(pair.as_str().to_string()),
 

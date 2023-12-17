@@ -1,9 +1,15 @@
 num        =  { ASCII_DIGIT+ }
 WHITESPACE = _{ " " }
 divide     =  { "/" }
-multiply   =  { "*" }
+multiply   =  { "*" | num ~ expr }
 add        =  { "+" }
 subtract   =  { "-" }
-opr        =  { add | subtract | divide | multiply }
+sqrt       =  { "sqrt" ~ "(" ~ num ~ ")" }
+root       =  { "rt" ~ "(" ~ num ~ "," ~ ")" }
+pow        =  { "pow" ~ "(" ~ num ~ "," ~ num ~ ")" | num ~ "^" ~ num }
+sin        =  { "sin" ~ "(" ~ num ~ ")" }
+cos        =  { "cos" ~ "(" ~ num ~ ")" }
+tan        =  { "tan" ~ "(" ~ num ~ ")" }
+opr        =  { add | subtract | divide | multiply | sqrt | root | pow | sin | cos | tan }
 expr       =  { "(" ~ (opr* ~ num+)+ ~ ")" }
 block      =  { SOI ~ (opr | expr+ | num+)+ ~ EOI }
