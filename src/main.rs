@@ -1,6 +1,7 @@
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+use std::io::{self, Write};
 
 #[derive(Parser)]
 #[grammar = "calc.pest"]
@@ -30,7 +31,23 @@ enum Operator {
 }
 
 fn main() {
-    parser("sin(0)");
+    // Create a mutable String to store the user input
+    let mut input = String::new();
+
+    // Print a prompt to the user
+    print!("Enter calculation: ");
+
+    // Flush the output to ensure the prompt is displayed
+    io::stdout().flush().expect("Failed to flush stdout");
+
+    // Read a line from standard input and store it in the 'input' variable
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    // Print the user input
+    println!("\nCalculating: {}", input);
+    parser(input.as_str().trim());
 }
 
 fn parser(calc: &str) {
@@ -43,12 +60,12 @@ fn parser(calc: &str) {
     let mut priority_arr: Vec<(Expr, i32)> = Vec::new();
 
     for pair in block {
-        /// parse each pair into its supposed type
+        // parse each pair into its supposed type
         let result = build_ast(pair.clone(), &val);
         //println!("pair: {}\n result: {:?}", pair.as_str(), result);
-        println!("result: {:?}", result);
+        //println!("result: {:?}", result);
 
-        /// build a priority arr for each all aprsed pair
+        // build a priority arr for each all aprsed pair
         match result {
             Expr::PriorityArr(_) => {
                 let value = build_bin_op(result); //consturct BinOp for brackets
@@ -71,29 +88,21 @@ fn parser(calc: &str) {
         }
     }
 
-    println!("parr: {:?}", priority_arr);
+    //println!("parr: {:?}", priority_arr);
 
     if priority_arr.len() > 1 {
         let fin_bin_op = build_bin_op(Expr::PriorityArr(priority_arr.clone()));
         let result = calculate(fin_bin_op.clone().unwrap(), 0_f32);
 
-        println!(
-            "PriorityArr Data: {:?}\n\nFinalBinOp: {:?}\n\nCalcResult: {:?}",
-            priority_arr,
-            fin_bin_op, //construct BinOp for all
-            result
-        );
+        println!("\nCalculation Result: {:?}", result);
     } else {
         let result = calculate(priority_arr.clone()[0].0.clone(), 0_f32);
-        println!(
-            "PriorityArr Data: {:?}\n\nCalcResult: {:?}",
-            priority_arr, result
-        );
+        println!("\nCalculation Result: {:?}", result);
     }
 }
 
 fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
-    println!("calledhere, {:?}", exp);
+    //println!("calledhere, {:?}", exp);
     let mut mut_sum = sum_val.clone();
 
     //println!("heres the mut sum: {}", mut_sum);
@@ -104,7 +113,7 @@ fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
             let l_val = calculate(*left, mut_sum);
             let r_val = calculate(*right, mut_sum);
 
-            println!("iniside here; {:?} {:?}", l_val, r_val);
+            //println!("iniside here; {:?} {:?}", l_val, r_val);
 
             mut_sum += match (l_val, r_val) {
                 (Some(val1), Some(val2)) => combine(val1, center, val2),
@@ -146,7 +155,7 @@ fn calculate(exp: Expr, sum_val: f32) -> Option<f32> {
             let angle_degrees = num1.parse::<f32>().unwrap();
             // Check if the angle is exactly 90 degrees
             if (angle_degrees % 180.0) == 90.0 {
-                println!("The tangent of 90 degrees is undefined.");
+                //println!("The tangent of 90 degrees is undefined.");
                 None
             } else {
                 let angle_radians = angle_degrees.to_radians();
@@ -176,7 +185,7 @@ fn build_bin_op(exp: Expr) -> Option<Expr> {
 
             let mut left_idx;
 
-            ///for cases where calc begins with a -
+            //for cases where calc begins with a -
             if max_idx as isize - 1 < 0 {
                 left_idx = 0;
             } else {
@@ -189,24 +198,24 @@ fn build_bin_op(exp: Expr) -> Option<Expr> {
             let right = Box::new(tuple_vec[right_idx].0.clone());
             let center = tuple_vec[max_idx].0.clone();
 
-            ///get modified arr, removing items that
-            ///will be consturcted into BinOp
+            //get modified arr, removing items that
+            //will be consturcted into BinOp
             let mut tv_clone = tuple_vec.clone();
             tv_clone.drain(left_idx as usize..=right_idx);
 
-            ///extract Operator from enum Expr::Operator
+            //extract Operator from enum Expr::Operator
             if let Expr::Operator(center_op) = center {
                 let bin_op = Expr::BinOp(left, center_op, right);
                 //println!("bin_opin: {:?}", bin_op);
 
-                ///if all the items in tuple_vec have been consumed
-                ///return constucted BinOp
+                //if all the items in tuple_vec have been consumed
+                //return constucted BinOp
                 if tv_clone.len() == 0 {
                     return Some(bin_op);
                 } else {
                     //tv_clone.append(&mut vec![(bin_op, 0)]);
-                    /// add constructed BinOp into its original poistion
-                    /// and call build_bin_op recursively
+                    // add constructed BinOp into its original poistion
+                    // and call build_bin_op recursively
                     tv_clone.splice(left_idx..left_idx, vec![(bin_op, 0)]);
                     return build_bin_op(Expr::PriorityArr(tv_clone));
                 }
@@ -221,21 +230,17 @@ fn build_bin_op(exp: Expr) -> Option<Expr> {
 }
 
 fn build_ast(pair: Pair<Rule>, value: &str) -> Expr {
-    let mut temp_val = String::new();
-    temp_val = temp_val + value;
+    //let mut temp_val = String::new();
+    //temp_val = temp_val + value;
     //println!("insidepair: {} {:?}", pair, pair.as_rule());
 
     let match_val: Expr = match pair.as_rule() {
         Rule::expr => {
-            temp_val = temp_val + "EXPR\n";
             let mut priority_arr: Vec<(Expr, i32)> = Vec::new();
-            let mut counter = 0;
-            //println!("tempvalexpr: {}", temp_val);
 
             for n_pair in pair.clone().into_inner() {
                 //println!("n_pair: {}", n_pair);
                 let n: Expr = build_ast(n_pair, format!("\t{}", value).as_str());
-                counter += 1;
 
                 match n {
                     Expr::Operator(Operator::Add) => priority_arr.push((n, 1)),
